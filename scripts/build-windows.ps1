@@ -48,6 +48,10 @@ if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) { throw "cl.exe sti
 # Ninja keeps the nested CMake projects on the same generator and is much faster than MSBuild.
 if (Get-Command ninja -ErrorAction SilentlyContinue) { $env:CMAKE_GENERATOR = "Ninja" }
 
+# ggml turns ccache on whenever it finds one, but ccache cannot handle MSVC's /Zi debug
+# info, which the Vulkan shader generator's compiler check uses (fatal error C1041).
+$env:CCACHE_DISABLE = "1"
+
 Require-Tool rustup "Install with: scoop install rustup"
 Require-Tool pnpm   "Install with: scoop install pnpm"
 Require-Tool cmake  "Install with: scoop install cmake"

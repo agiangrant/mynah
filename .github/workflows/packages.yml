@@ -31,7 +31,7 @@ jobs:
           git checkout -B ci-source
           brew tap agiangrant/mynah "$PWD"
           formula="$(brew --repository agiangrant/mynah)/Formula/mynah.rb"
-          sed -i '' "s|^  head .*|  head \"file://$PWD\", branch: \"ci-source\"|" "$formula"
+          sed -i '' "s|^  head .*|  head \"file://$PWD\", branch: \"ci-source\", using: :git|" "$formula"
           grep -n "head " "$formula"
       - name: Build and install
         run: |
@@ -46,6 +46,9 @@ jobs:
           brew test mynah
           mynah app-path
           codesign -dv "$(mynah app-path)"
+      - name: Build logs
+        if: failure()
+        run: for f in ~/Library/Logs/Homebrew/mynah/*; do echo "=== $f"; tail -n 80 "$f"; done
 
   scoop:
     name: Scoop manifest (Windows)
