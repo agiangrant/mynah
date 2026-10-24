@@ -18,7 +18,7 @@
         "main/vulkan"
     ],
     "url": "https://github.com/agiangrant/mynah/archive/refs/tags/v0.1.0.zip",
-    "hash": "HASH_PLACEHOLDER",
+    "hash": "e2d36cc403c3cbf06623cb164a8d0556cce648bdc2a8acca7754110d6fe7c057",
     "extract_dir": "mynah-0.1.0",
     "installer": {
         "script": [

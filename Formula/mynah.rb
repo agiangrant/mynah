@@ -8,7 +8,7 @@ class Mynah < Formula
   desc "Local speech-to-text for the desktop: hold a key, talk, text appears"
   homepage "https://github.com/agiangrant/mynah"
   url "https://github.com/agiangrant/mynah/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "SHA256_PLACEHOLDER"
+  sha256 "4be4513df4b7bffea8e07338b2ea4393cb47a409c17fc9a5a51f5489dca9a749"
   license "MIT"
   head "https://github.com/agiangrant/mynah.git", branch: "main"
 
