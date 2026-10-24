@@ -1,5 +1,7 @@
 # Mynah
 
+[![packages](https://github.com/agiangrant/mynah/actions/workflows/packages.yml/badge.svg)](https://github.com/agiangrant/mynah/actions/workflows/packages.yml)
+
 Fast, private, on-device speech to text for macOS, Windows and Linux. Hold a key, speak, release: the words land wherever your cursor is. Nothing leaves your machine.
 
 ## Features
@@ -33,9 +35,30 @@ scoop bucket add mynah https://github.com/agiangrant/mynah
 scoop install mynah                      # pulls rustup, Node, pnpm, cmake and the Vulkan SDK
 ```
 
-**Linux (snap)**: `snap install mynah` once the Store listing is live. Until then, or to build it yourself: `snapcraft` in the repo root, then `sudo snap install --dangerous mynah_*.snap`. The global shortcut and text insertion use X11; on Wayland run it under XWayland.
+Windows also needs the Microsoft Edge WebView2 runtime, which Windows 10/11 already include.
 
-The CI workflow in `.github/workflows/packages.yml` runs all three installs from scratch on every push.
+**Linux (snap)**. Until the Snap Store listing is live, install the `.snap` file directly; `--dangerous` is what snapd requires for any snap not signed by the store:
+
+```sh
+# build it yourself (needs snapd and `sudo snap install snapcraft --classic`)
+git clone https://github.com/agiangrant/mynah && cd mynah
+snapcraft
+sudo snap install --dangerous ./mynah_*.snap
+
+# or take the .snap that CI already built for the latest commit
+gh run download -R agiangrant/mynah -n mynah-snap
+sudo snap install --dangerous ./mynah_*.snap
+
+# once published: plain `snap install mynah`, updates arrive automatically
+```
+
+The global shortcut and text insertion use X11; on a Wayland session run Mynah under XWayland.
+
+**Upgrading**: `brew upgrade mynah` · `scoop update mynah` · `snap refresh mynah` (or reinstall the new `.snap`). On macOS the `mynah` command re-signs the new build with your local identity before launching, so the permissions you granted stay put.
+
+**Uninstalling**: `brew uninstall mynah` · `scoop uninstall mynah` · `snap remove mynah`. Models and settings live in the data directory listed under [Data locations](#data-locations) and are not removed.
+
+The CI workflow in `.github/workflows/packages.yml` runs all three installs from scratch on every push, so if the badge is green the commands above work on a clean machine.
 
 ## Stack
 
