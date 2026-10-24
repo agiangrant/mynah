@@ -1,0 +1,41 @@
+{
+    "version": "0.1.0",
+    "description": "Local speech-to-text for the desktop. Builds from source; expect 10-20 minutes.",
+    "homepage": "https://github.com/agiangrant/mynah",
+    "license": "MIT",
+    "notes": [
+        "Mynah was compiled on this machine, so there is no SmartScreen warning and nothing phones home.",
+        "Prerequisite not installable by Scoop: Visual Studio Build Tools with the 'Desktop development with C++' workload.",
+        "  winget install Microsoft.VisualStudio.2022.BuildTools --override \"--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive\"",
+        "Needs the Microsoft Edge WebView2 runtime, which Windows 10/11 already ship."
+    ],
+    "depends": [
+        "main/git",
+        "main/rustup",
+        "main/nodejs-lts",
+        "main/pnpm",
+        "main/cmake",
+        "main/vulkan"
+    ],
+    "url": "https://github.com/agiangrant/mynah/archive/refs/tags/v0.1.0.zip",
+    "hash": "HASH_PLACEHOLDER",
+    "extract_dir": "mynah-0.1.0",
+    "installer": {
+        "script": [
+            "& powershell -NoProfile -ExecutionPolicy Bypass -File \"$dir\\scripts\\build-windows.ps1\" -Dir \"$dir\"",
+            "if ($LASTEXITCODE -ne 0) { error 'Mynah build failed; see the output above.'; exit 1 }"
+        ]
+    },
+    "bin": "Mynah.exe",
+    "shortcuts": [
+        [
+            "Mynah.exe",
+            "Mynah"
+        ]
+    ],
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/agiangrant/mynah/archive/refs/tags/v$version.zip",
+        "extract_dir": "mynah-$version"
+    }
+}

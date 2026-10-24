@@ -1,0 +1,93 @@
+# Exercises the three source-build install paths end to end. Each job takes 15-40
+# minutes because it compiles whisper.cpp and the app from scratch, which is exactly
+# what a user's machine will do.
+name: packages
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  homebrew:
+    name: Homebrew formula (macOS)
+    runs-on: macos-14
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Style
+        run: brew style Formula/mynah.rb
+      - name: Build and install from the checked-out source
+        run: |
+          # --HEAD builds the main branch; for a tag the stable url is exercised instead.
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            brew install --build-from-source --verbose ./Formula/mynah.rb
+          else
+            brew install --build-from-source --HEAD --verbose ./Formula/mynah.rb
+          fi
+      - name: Test
+        run: |
+          brew test mynah
+          mynah app-path
+          codesign -dv "$(mynah app-path)"
+
+  scoop:
+    name: Scoop manifest (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Scoop
+        shell: pwsh
+        run: |
+          Invoke-RestMethod get.scoop.sh -OutFile install.ps1
+          .\install.ps1 -RunAsAdmin
+          "$env:USERPROFILE\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Append
+      - name: Install from the checked-out manifest
+        shell: pwsh
+        run: |
+          # The manifest points at the tagged tarball; for a branch build swap in this checkout.
+          $m = Get-Content bucket/mynah.json -Raw | ConvertFrom-Json
+          if ($env:GITHUB_REF -notlike "refs/tags/*") {
+            Compress-Archive -Path * -DestinationPath "$env:RUNNER_TEMP\mynah-src.zip" -Force
+            $m.url = "file:///" + ("$env:RUNNER_TEMP\mynah-src.zip" -replace "\\", "/")
+            $m.hash = (Get-FileHash "$env:RUNNER_TEMP\mynah-src.zip" -Algorithm SHA256).Hash.ToLower()
+            $m.PSObject.Properties.Remove("extract_dir")
+            $m | ConvertTo-Json -Depth 10 | Set-Content "$env:RUNNER_TEMP\mynah.json"
+            scoop install "$env:RUNNER_TEMP\mynah.json"
+          } else {
+            scoop install bucket/mynah.json
+          }
+      - name: Test
+        shell: pwsh
+        run: |
+          $exe = Join-Path (scoop prefix mynah) "Mynah.exe"
+          if (-not (Test-Path $exe)) { throw "Mynah.exe missing" }
+          (Get-Item $exe).Length
+
+  snap:
+    name: Snap (Linux)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    env:
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snapcore/action-build@v1
+        id: build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mynah-snap
+          path: ${{ steps.build.outputs.snap }}
+      - name: Publish to the Snap Store
+        if: startsWith(github.ref, 'refs/tags/v') && env.SNAPCRAFT_STORE_CREDENTIALS != ''
+        uses: snapcore/action-publish@v1
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: stable

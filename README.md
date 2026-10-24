@@ -13,6 +13,30 @@ Fast, private, on-device speech to text for macOS, Windows and Linux. Hold a key
 - **Meeting transcription** with timestamps, split into You / Others when a system audio device is configured, saved as Markdown or text.
 - **Floating status pill** that never steals focus, tray icon, launch at login, history with search, insert by typing or paste.
 
+## Install
+
+Every route builds from source on your machine: no download to trust, no signing fee to pay, and because the binary was compiled locally there is no Gatekeeper or SmartScreen quarantine. The toolchains come from the package manager; the first build takes 10–20 minutes.
+
+**macOS (Homebrew)**, needs the Command Line Tools (`xcode-select --install`):
+
+```sh
+brew tap agiangrant/mynah https://github.com/agiangrant/mynah
+brew install agiangrant/mynah/mynah      # or --HEAD for the main branch
+mynah setup-signing                      # once: local signing identity so permissions survive upgrades
+mynah                                    # or: ln -sfn "$(mynah app-path)" /Applications/Mynah.app
+```
+
+**Windows (Scoop)**, needs Visual Studio Build Tools with the C++ workload (`winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive"`):
+
+```powershell
+scoop bucket add mynah https://github.com/agiangrant/mynah
+scoop install mynah                      # pulls rustup, Node, pnpm, cmake and the Vulkan SDK
+```
+
+**Linux (snap)**: `snap install mynah` once the Store listing is live. Until then, or to build it yourself: `snapcraft` in the repo root, then `sudo snap install --dangerous mynah_*.snap`. The global shortcut and text insertion use X11; on Wayland run it under XWayland.
+
+The CI workflow in `.github/workflows/packages.yml` runs all three installs from scratch on every push.
+
 ## Stack
 
 Tauri 2 + Rust backend (`src-tauri`), React 19 + TypeScript frontend (`src`). Audio capture with cpal, key listening with rdev, text injection with enigo, inference with whisper-rs.
