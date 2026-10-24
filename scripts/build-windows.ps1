@@ -78,10 +78,27 @@ if (-not $env:VULKAN_SDK) {
 
 # whisper.cpp's nested Vulkan tool build nests ~210 characters of directories under the
 # cargo target dir; from Scoop's app folder that passes Windows' 260-character path limit
-# (fatal error C1041 on vc140.pdb). Build somewhere short instead.
-$target = Join-Path ([IO.Path]::GetTempPath().TrimEnd('\')) "mynah-b"
-if ($target.Length -gt 45) { $target = Join-Path $env:PUBLIC "mynah-b" }
+# (fatal error C1041 on vc140.pdb). Build in a short, freshly created, owner-only
+# directory under the user's profile instead (never a shared location).
+$suffix = -join ((48..57) + (97..122) | Get-Random -Count 6 | ForEach-Object { [char]$_ })
+$target = Join-Path $env:USERPROFILE ".mb-$suffix"
+if ($target.Length -gt 48) {
+    throw "User profile path is too long for the build ($target). Set CARGO_TARGET_DIR to a short directory you own (for example a drive mapped with subst) and re-run."
+}
+New-Item -ItemType Directory -Path $target -ErrorAction Stop | Out-Null  # fails if it already exists
 $env:CARGO_TARGET_DIR = $target
+
+function Remove-BuildDir([string]$path) {
+    if (-not (Test-Path -LiteralPath $path)) { return }
+    $item = Get-Item -LiteralPath $path -Force
+    if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        Write-Warning "Not deleting $path because it is a junction or symlink"
+        return
+    }
+    # rmdir does not follow junctions inside the tree, unlike Remove-Item -Recurse.
+    & cmd.exe /c "rmdir /s /q `"$path`""
+    if ($LASTEXITCODE -ne 0) { Write-Warning "Could not fully delete $path" }
+}
 
 Push-Location $Dir
 try {
@@ -91,12 +108,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "tauri build failed" }
 
     Copy-Item -Force (Join-Path $target "release\mynah.exe") (Join-Path $Dir "Mynah.exe")
-
-    # The build tree is several GB; the exe is self-contained.
-    foreach ($d in @($target, "node_modules", "dist")) {
-        if (Test-Path $d) { Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue }
-    }
     Write-Host "Built $(Join-Path $Dir 'Mynah.exe')"
 } finally {
     Pop-Location
+    # The build tree is several GB; the exe is self-contained.
+    Remove-BuildDir $target
+    Remove-BuildDir (Join-Path $Dir "node_modules")
+    Remove-BuildDir (Join-Path $Dir "dist")
 }
