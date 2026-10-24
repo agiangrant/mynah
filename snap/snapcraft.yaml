@@ -48,6 +48,8 @@ parts:
       - libwebkit2gtk-4.1-dev
       - build-essential
       - cmake
+      - clang
+      - libclang-dev
       - curl
       - wget
       - file

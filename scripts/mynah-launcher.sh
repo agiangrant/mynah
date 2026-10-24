@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# `mynah` command installed by the Homebrew formula. Homebrew rewrites @APP@ and
-# @LIBEXEC@ at install time.
+# `mynah` command installed by the Homebrew formula, which fills in the app bundle
+# and libexec paths below at install time.
 #
 #   mynah                 open Mynah (re-signing it first if your local identity exists)
 #   mynah setup-signing   create the local signing identity once, then sign the app

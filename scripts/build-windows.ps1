@@ -30,6 +30,24 @@ Install them once, then re-run:
 "@
 }
 
+$msvc = @($msvc)[0]
+
+# Load the Visual Studio developer environment (cl.exe, link.exe, SDK paths) into this
+# session. whisper.cpp's Vulkan shader generator configures a nested CMake project that
+# needs cl.exe on PATH, which a plain PowerShell window does not provide.
+$devcmd = Join-Path $msvc "Common7\Tools\VsDevCmd.bat"
+if (-not (Test-Path $devcmd)) { throw "VsDevCmd.bat not found under $msvc" }
+$envDump = & cmd.exe /s /c "`"$devcmd`" -arch=x64 -host_arch=x64 -no_logo && set"
+foreach ($line in $envDump) {
+    if ($line -match '^([^=]+)=(.*)$') {
+        [Environment]::SetEnvironmentVariable($matches[1], $matches[2], "Process")
+    }
+}
+if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) { throw "cl.exe still not on PATH after VsDevCmd" }
+
+# Ninja keeps the nested CMake projects on the same generator and is much faster than MSBuild.
+if (Get-Command ninja -ErrorAction SilentlyContinue) { $env:CMAKE_GENERATOR = "Ninja" }
+
 Require-Tool rustup "Install with: scoop install rustup"
 Require-Tool pnpm   "Install with: scoop install pnpm"
 Require-Tool cmake  "Install with: scoop install cmake"
