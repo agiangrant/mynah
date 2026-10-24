@@ -76,6 +76,13 @@ if (-not $env:VULKAN_SDK) {
     throw "VULKAN_SDK is not set. Install the Vulkan SDK (scoop install vulkan) or set VULKAN_SDK to it."
 }
 
+# whisper.cpp's nested Vulkan tool build nests ~210 characters of directories under the
+# cargo target dir; from Scoop's app folder that passes Windows' 260-character path limit
+# (fatal error C1041 on vc140.pdb). Build somewhere short instead.
+$target = Join-Path ([IO.Path]::GetTempPath().TrimEnd('\')) "mynah-b"
+if ($target.Length -gt 45) { $target = Join-Path $env:PUBLIC "mynah-b" }
+$env:CARGO_TARGET_DIR = $target
+
 Push-Location $Dir
 try {
     & pnpm install --frozen-lockfile
@@ -83,10 +90,10 @@ try {
     & pnpm tauri build --no-bundle --ci
     if ($LASTEXITCODE -ne 0) { throw "tauri build failed" }
 
-    Copy-Item -Force "src-tauri\target\release\mynah.exe" (Join-Path $Dir "Mynah.exe")
+    Copy-Item -Force (Join-Path $target "release\mynah.exe") (Join-Path $Dir "Mynah.exe")
 
     # The build tree is several GB; the exe is self-contained.
-    foreach ($d in @("src-tauri\target", "node_modules", "dist")) {
+    foreach ($d in @($target, "node_modules", "dist")) {
         if (Test-Path $d) { Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue }
     }
     Write-Host "Built $(Join-Path $Dir 'Mynah.exe')"
