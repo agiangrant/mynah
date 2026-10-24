@@ -23,13 +23,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Style
         run: brew style Formula/mynah.rb
-      - name: Build and install from the checked-out source
+      - name: Tap this checkout
         run: |
-          # --HEAD builds the main branch; for a tag the stable url is exercised instead.
+          # Homebrew only installs formulae from taps. The repo is its own tap; for a
+          # branch build point `head` at this checkout so the tested code is the pushed code.
+          git branch -f main HEAD
+          brew tap agiangrant/mynah "$PWD"
+          formula="$(brew --repository agiangrant/mynah)/Formula/mynah.rb"
+          sed -i '' "s|head \"https://github.com/agiangrant/mynah.git\"|head \"file://$PWD\"|" "$formula"
+      - name: Build and install
+        run: |
+          # A tag exercises the stable tarball url; anything else builds --HEAD from the checkout.
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            brew install --build-from-source --verbose ./Formula/mynah.rb
+            brew install --build-from-source --verbose agiangrant/mynah/mynah
           else
-            brew install --build-from-source --HEAD --verbose ./Formula/mynah.rb
+            brew install --build-from-source --HEAD --verbose agiangrant/mynah/mynah
           fi
       - name: Test
         run: |
